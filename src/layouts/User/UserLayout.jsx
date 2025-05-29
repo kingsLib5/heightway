@@ -6,7 +6,6 @@ import Deposit from '../../components/User-components/Deposit';
 import LocalTransfer from '../../components/User-components/LocalTransfer';
 import InternationalTransfer from '../../components/User-components/InternationalTransfer';
 import PayBills from '../../components/User-components/PayBills';
-import Loans from '../../components/User-components/Loans';
 import Savings from '../../components/User-components/Savings';
 
 
@@ -21,7 +20,6 @@ export default function UserLayout() {
         <Route path="local-transfer" element={<LocalTransfer />} />
         <Route path="international-transfer" element={<InternationalTransfer />} />
         <Route path="pay-bills" element={<PayBills />} />
-        <Route path="loans" element={<Loans />} />
         <Route path="savings" element={<Savings />} />
       </Route>
     </Routes>

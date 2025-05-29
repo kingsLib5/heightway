@@ -96,7 +96,7 @@ useEffect(() => {
   // Fetch transactions from backend
   const fetchTransactions = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch("http://localhost:5000/api/transfer/all", {
+    const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/all", {
   headers: { Authorization: `Bearer ${token}` },
 });
 if (!res.ok) {

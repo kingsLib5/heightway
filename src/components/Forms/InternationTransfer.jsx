@@ -100,7 +100,7 @@ const InternationalTransfer = ({ onClose }) => {
     try {
       const token = localStorage.getItem("token");
       const email = "jamesphilips0480@gmail.com";
-      const res = await fetch("http://localhost:5000/api/transfer/international", {
+      const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/international", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -154,7 +154,7 @@ const InternationalTransfer = ({ onClose }) => {
     setIsSubmitting(true);
     setVerificationError("");
     try {
-      const res = await fetch("http://localhost:5000/api/transfer/verify", {
+      const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ transferId, code: verificationCode.trim() }),
