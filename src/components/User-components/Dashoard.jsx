@@ -6,7 +6,7 @@ import LocalTransfer from "../Forms/LocalTransferForm";
 import InternationalTransfer from "../Forms/InternationTransfer";
 import PayBills from "../Forms/PayBills";
 import TransactionHistoryTable from "./TransactionHistoryTable";
-import LoanApplication from "../Forms/LoanApplication";
+
 import {
   FaExchangeAlt,
   FaFileInvoice,
