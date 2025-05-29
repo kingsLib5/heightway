@@ -27,7 +27,7 @@ function KoreaSub() {
       <div className='bg-white grid grid-cols-12 h-auto md:h-[9vh] py-4 md:py-0 px-4 md:px-0'>
         <div className='flex col-span-12 md:col-span-2 justify-center md:justify-end items-center md:pl-[40px]'>
           <a href="/korea">
-            <div className='bg-[url(././assets/hssbbcc.jpg)] bg-center bg-contain w-[100px] h-[40px] bg-no-repeat'></div>
+            <div className='bg-[url(././assets/Hssbbcc.jpg)] bg-center bg-contain w-[100px] h-[40px] bg-no-repeat'></div>
           </a>
         </div>
         

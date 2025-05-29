@@ -95,7 +95,7 @@ function BankingNavBar() {
 
         <div className="col-span-8 md:col-span-2 flex justify-center md:justify-end items-center pr-0 md:pr-[40px]">
           <a href="/market">
-            <div className="bg-[url(././assets/hssbbcc.jpg)] bg-center bg-contain w-[60px] md:w-[80px] h-[30px] md:h-[40px] bg-no-repeat" />
+            <div className="bg-[url(././assets/Hssbbcc.jpg)] bg-center bg-contain w-[60px] md:w-[80px] h-[30px] md:h-[40px] bg-no-repeat" />
           </a>
         </div>
 

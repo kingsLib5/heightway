@@ -67,7 +67,7 @@ function BankingNavBar() {
             )}
           </button>
           <a href="/banking">
-            <div className="bg-[url(././assets/hssbbcc.jpg)] bg-center bg-contain w-[80px] h-[40px] bg-no-repeat" />
+            <div className="bg-[url(././assets/Hssbbcc.jpg)] bg-center bg-contain w-[80px] h-[40px] bg-no-repeat" />
           </a>
         </div>
 

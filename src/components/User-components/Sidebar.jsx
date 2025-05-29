@@ -214,7 +214,7 @@ const Sidebar = () => {
         <div className='flex justify-end items-center pr-[40px] gap-[30px]'>
           
             <div
-              className='bg-[url(././assets/hssbbcc.jpg)]
+              className='bg-[url(././assets/Hssbbcc.jpg)]
                        bg-center bg-contain
                        w-[100px] h-[40px]
                        bg-no-repeat'
@@ -292,7 +292,7 @@ const Sidebar = () => {
               <div className='flex justify-end items-center pr-[40px] gap-[30px]'>
                   
                     <div
-                      className='bg-[url(././assets/hssbbcc.jpg)]
+                      className='bg-[url(././assets/Hssbbcc.jpg)]
                               bg-center bg-contain
                               w-[100px] h-[40px]
                               bg-no-repeat'

@@ -23,7 +23,7 @@ function HomeNavBar() {
         <div className='flex items-center'>
           <a href="/">
             <div
-              className='bg-[url(././assets/hssbbcc.jpg)]
+              className='bg-[url(././assets/Hssbbcc.jpg)]
                          bg-center bg-contain
                          w-[80px] md:w-[100px] h-[30px] md:h-[40px]
                          bg-no-repeat'
