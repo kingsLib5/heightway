@@ -27,7 +27,7 @@ const TransactionTable = ({ transactions, showBalance = false }) => (
             (header) => (
               <th
                 key={header}
-                className="px-4 py-3 text-left text-xs sm:text-sm font-semibold text-rose-800"
+                className="px-4 py-3 text-left text-xxx sm:text-sm font-semibold text-rose-800"
               >
                 {header}
               </th>
@@ -41,18 +41,22 @@ const TransactionTable = ({ transactions, showBalance = false }) => (
             key={`${transaction.date}-${transaction.balance || transaction.amount}-${transaction.description}`}
             className="hover:bg-rose-50 transition-colors"
           >
-            <td className="px-4 py-3 text-xs sm:text-sm text-rose-700">{transaction.date}</td>
-            <td className="px-4 py-3 text-xs sm:text-sm text-rose-600">{transaction.description}</td>
-            <td className="px-4 py-3 text-xs sm:text-sm text-right font-medium text-green-600">
+            <td className="px-4 py-3 text-xxx sm:text-sm text-rose-700">{transaction.date}</td>
+            <td className="px-4 py-3 text-xxx sm:text-sm text-rose-600">{transaction.description}</td>
+            <td
+              className={`px-4 py-3 text-xxx sm:text-sm text-right font-medium ${
+                transaction.type === "Credit" ? "text-green-600" : "text-red-600"
+              }`}
+            >
               {transaction.amount}
             </td>
             <td className="px-4 py-3 text-right">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-200 text-rose-800">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xxx font-medium bg-rose-200 text-rose-800">
                 {transaction.type}
               </span>
             </td>
             {showBalance && (
-              <td className="px-4 py-3 text-xs sm:text-sm text-right font-medium text-purple-600">
+              <td className="px-4 py-3 text-xxx sm:text-sm text-right font-medium text-purple-600">
                 {transaction.balance}
               </td>
             )}
