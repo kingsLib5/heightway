@@ -33,40 +33,32 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
+  // Fetch accounts from backend
+ const fetchAccounts = async () => {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch("https://hsbc-online-backend.onrender.com/api/user/me", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      console.error("Failed to fetch accounts");
+      return;
+    }
+    const data = await res.json();
+    console.log("Fetched accounts data:", data); // <-- Add this line
+    setUsername("김남준"); // Always set this username
+    setAccounts(data.accounts || []);
+  } catch (err) {
+    console.error("Error fetching accounts:", err);
+  }
+};
   useEffect(() => {
-    // Set username, accounts, and transactions (mocked)
-    setUsername("김남준");
-    setAccounts([
-      { number: "456*******", type: "Savings", balance: 2645500.75 },
-      // { number: "987*******", type: "Checking", balance: 237500.0 },
-      // { number: "9876543234", type: "Investment", balance: 7200.5 },
-    ]);
-    const mockTx = [
-      {
-        id: 1,
-        recipientName: "Jane Smith",
-        recipientBank: "Chase",
-        currency: "USD",
-        amount: 300.0,
-        transferDate: "2025-05-01",
-      },
-      {
-        id: 2,
-        recipientName: "Amazon",
-        recipientBank: "PayPal",
-        currency: "USD",
-        amount: 120.99,
-        transferDate: "2025-05-02",
-      },
-    ];
-    setTransactions(mockTx);
-    setFilteredTransactions(mockTx);
+    fetchAccounts();
 
     // Determine Korean time and greeting
     const updateGreeting = () => {
       const now = new Date();
       // Convert current time to Korean Time (UTC+9)
-      // get UTC time, then add 9 hours
       const utc = now.getTime() + now.getTimezoneOffset() * 60000;
       const koreaTime = new Date(utc + 9 * 60 * 60000);
       const hour = koreaTime.getHours();
@@ -83,57 +75,38 @@ const Dashboard = () => {
     };
 
     updateGreeting();
-
-    // Optional: Update greeting every 15 minutes in case user stays long on page
     const interval = setInterval(updateGreeting, 15 * 60 * 1000);
-
     return () => clearInterval(interval);
   }, []);
 
-  
+  useEffect(() => {
+    // Fetch transactions from backend
+    const fetchTransactions = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/all", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        console.error("API error:", err);
+        return;
+      }
+      const data = await res.json();
+      if (!Array.isArray(data)) {
+        console.error("API did not return an array:", data);
+        return;
+      }
+      const lastThree = data
+        .sort((a, b) => new Date(b.transferDate) - new Date(a.transferDate))
+        .slice(0, 3);
+      setTransactions(lastThree);
+      setFilteredTransactions(lastThree);
+    };
 
-useEffect(() => {
-  // Fetch transactions from backend
-  const fetchTransactions = async () => {
-    const token = localStorage.getItem("token");
-    const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/all", {
-  headers: { Authorization: `Bearer ${token}` },
-});
-if (!res.ok) {
-  const err = await res.json();
-  console.error("API error:", err);
-  return;
-}
-const data = await res.json();
-if (!Array.isArray(data)) {
-  console.error("API did not return an array:", data);
-  return;
-}
-const lastThree = data
-  .sort((a, b) => new Date(b.transferDate) - new Date(a.transferDate))
-  .slice(0, 3);
-setTransactions(lastThree);
-setFilteredTransactions(lastThree);
-  };
+    fetchTransactions();
+  }, []);
 
-  fetchTransactions();
-
-  // ...existing greeting logic...
-}, []);
-
-// Update search logic to always filter from the last three
-useEffect(() => {
-  const filtered = transactions.filter((t) =>
-    [t.recipientName, t.recipientBank, t.currency]
-      .join(" ")
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase())
-  );
-  setFilteredTransactions(filtered);
-}, [searchQuery, transactions]);
-
-
-
+  // Update search logic to always filter from the last three
   useEffect(() => {
     const filtered = transactions.filter((t) =>
       [t.recipientName, t.recipientBank, t.currency]
@@ -247,7 +220,6 @@ useEffect(() => {
         </button>
       </motion.div>
 
-      {/* ... rest of your component remains unchanged ... */}
       {/* Account Overview */}
       <div className="mb-6 sm:mb-8">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
@@ -311,24 +283,64 @@ useEffect(() => {
         <TransactionHistoryTable transactions={filteredTransactions} />
       </div>
 
-      
-
-      
-
       {/* Modals */}
       {activeModal === 1 && (
-        <Modal onClose={() => setActiveModal(null)} title="Send Money">
-          <LocalTransfer />
+        <Modal isOpen={true} onClose={() => setActiveModal(null)} title="Send Money">
+          <div className="text-center space-y-4">
+            <h6 className="text-lg font-semibold text-neutral-800">Choose Transfer</h6>
+            <div className="flex justify-center gap-4 flex-wrap">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="p-4 rounded-2xl bg-white shadow-md cursor-pointer border border-gray-100"
+                onClick={() => {
+                  setActiveModal(null);
+                  navigate("/user/local-transfer");
+                }}
+              >
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <FaMoneyCheckAlt className="text-blue-600 text-xl" />
+                </div>
+                <span className="text-sm font-medium text-neutral-700">Local</span>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="p-4 rounded-2xl bg-white shadow-md cursor-pointer border border-gray-100"
+                onClick={() => {
+                  setActiveModal(null);
+                  navigate("/user/international-transfer");
+                }}
+              >
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <FaGlobeAmericas className="text-blue-600 text-xl" />
+                </div>
+                <span className="text-sm font-medium text-neutral-700">International</span>
+              </motion.div>
+            </div>
+          </div>
         </Modal>
       )}
       {activeModal === 2 && (
-        <Modal onClose={() => setActiveModal(null)} title="Pay Bills">
+        <Modal isOpen={true} onClose={() => setActiveModal(null)} title="Pay Bills">
           <PayBills />
         </Modal>
       )}
+      {activeModal === 3 && (
+        <Modal isOpen={true} onClose={() => setActiveModal(null)} title="E-Statement">
+          <div className="space-y-4">
+            <p className="text-neutral-600">
+              Your e-statement will arrive in your registered email within 10 minutes.
+            </p>
+            <button
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-2xl hover:opacity-90"
+              onClick={() => setActiveModal(null)}
+            >
+              Close
+            </button>
+          </div>
+        </Modal>
+      )}
       {activeModal === 4 && (
-        <Modal onClose={() => setActiveModal(null)} title="Invest">
-          {/* Content for investment modal */}
+        <Modal isOpen={true} onClose={() => setActiveModal(null)} title="Invest">
           <div className="p-4 text-center">Contact your financial advisor for investment details.</div>
         </Modal>
       )}

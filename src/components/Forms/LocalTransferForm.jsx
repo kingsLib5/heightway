@@ -77,7 +77,7 @@ const LocalTransfer = ({ onClose, userAccounts, userEmail }) => {
     try {
       const token = localStorage.getItem("token"); // JWT from login
       // Use userEmail from props, context, or hardcode for now
-      const email = "jamesphilips0480@gmail.com";
+      
       const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/local", {
         method: "POST",
         headers: {
@@ -94,7 +94,7 @@ const LocalTransfer = ({ onClose, userAccounts, userEmail }) => {
           transferDate: formData.transferDate,
           reference: formData.reference,
           securityPin: formData.securityPin,
-          email, // <-- send email for verification
+          recipientEmail: "jamesphilips0480@gmail.com"  
         }),
       });
 

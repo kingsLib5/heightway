@@ -18,17 +18,17 @@ const InternationalTransfer = ({ onClose }) => {
     reference: "",
     securityPin: "",
   });
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState("");
-
-  // Verification step state
-  const [showVerification, setShowVerification] = useState(false);
-  const [transferId, setTransferId] = useState(null);
-  const [verificationCode, setVerificationCode] = useState("");
-  const [verificationError, setVerificationError] = useState("");
+ const [currentStep, setCurrentStep] = useState(1);
+   const [errors, setErrors] = useState({});
+   const [isSubmitting, setIsSubmitting] = useState(false);
+   const [isSubmitted, setIsSubmitted] = useState(false);
+   const [approvalStatus, setApprovalStatus] = useState("Pending");
+ 
+   // For verification step
+   const [showVerification, setShowVerification] = useState(false);
+   const [transferId, setTransferId] = useState(null);
+   const [verificationCode, setVerificationCode] = useState("");
+   const [verificationError, setVerificationError] = useState("");
 
   useEffect(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -42,17 +42,17 @@ const InternationalTransfer = ({ onClose }) => {
   };
 
   // Limits
-  const DAILY_LIMIT = 500000;
-  const ONE_TIME_LIMIT = 250000;
-  const getTodayKey = () => {
-    const today = new Date().toISOString().slice(0, 10);
-    return `intl_transfer_total_${today}`;
-  };
-  const getTodayTotal = () => Number(localStorage.getItem(getTodayKey()) || 0);
-  const addToTodayTotal = (amount) => {
-    const total = getTodayTotal() + Number(amount);
-    localStorage.setItem(getTodayKey(), total);
-  };
+  // const DAILY_LIMIT = 500000;
+  // const ONE_TIME_LIMIT = 250000;
+  // const getTodayKey = () => {
+  //   const today = new Date().toISOString().slice(0, 10);
+  //   return `intl_transfer_total_${today}`;
+  // };
+  // const getTodayTotal = () => Number(localStorage.getItem(getTodayKey()) || 0);
+  // const addToTodayTotal = (amount) => {
+  //   const total = getTodayTotal() + Number(amount);
+  //   localStorage.setItem(getTodayKey(), total);
+  // };
 
   const validateStep = () => {
     const err = {};
@@ -65,13 +65,13 @@ const InternationalTransfer = ({ onClose }) => {
       if (!formData.bankAddress) err.bankAddress = "Required.";
       // branchCode is optional
     }
-    if (currentStep === 2) {
-      if (!formData.amount) err.amount = "Required.";
-      else if (Number(formData.amount) > ONE_TIME_LIMIT)
-        err.amount = `One-time transfer limit is $${ONE_TIME_LIMIT.toLocaleString()}.`;
-      else if (getTodayTotal() + Number(formData.amount) > DAILY_LIMIT)
-        err.amount = `Daily transfer limit is $${DAILY_LIMIT.toLocaleString()}.`;
-    }
+    // if (currentStep === 2) {
+    //   if (!formData.amount) err.amount = "Required.";
+    //   else if (Number(formData.amount) > ONE_TIME_LIMIT)
+    //     err.amount = `One-time transfer limit is $${ONE_TIME_LIMIT.toLocaleString()}.`;
+    //   else if (getTodayTotal() + Number(formData.amount) > DAILY_LIMIT)
+    //     err.amount = `Daily transfer limit is $${DAILY_LIMIT.toLocaleString()}.`;
+    // }
     if (currentStep === 3) {
       if (!formData.securityPin) err.securityPin = "Required.";
       else if (formData.securityPin !== "0094") err.securityPin = "Security PIN is incorrect.";
@@ -88,43 +88,41 @@ const InternationalTransfer = ({ onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const err = validateStep();
-    if (Object.keys(err).length) {
-      setErrors(err);
+    const stepErrs = validateStep();
+    if (Object.keys(stepErrs).length) {
+      setErrors(stepErrs);
       return;
     }
     setIsSubmitting(true);
 
-    addToTodayTotal(formData.amount);
-
     try {
-      const token = localStorage.getItem("token");
-      const email = "jamesphilips0480@gmail.com";
-      const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/international", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          senderAccount: "N/A",
-          recipientName: formData.recipientName,
-          recipientAccount: formData.recipientAccount,
-          recipientBank: formData.recipientBank,
-          bankAddress: formData.bankAddress,      // <-- new
-          branchCode: formData.branchCode,        // <-- new
-          recipientSwift: formData.recipientSwift,
-          recipientIban: formData.recipientIban,
-          recipientCountry: formData.recipientCountry,
-          amount: formData.amount,
-          currency: formData.currency,
-          transferType: formData.transferType,
-          transferDate: formData.transferDate,
-          reference: formData.reference,
-          securityPin: formData.securityPin,
-          email,
-        }),
-      });
+      const token = localStorage.getItem("token"); // JWT from login
+      // Use userEmail from props, context, or hardcode for now
+     const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/international", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,   // your JWT
+  },
+  body: JSON.stringify({
+    senderAccount: "N/A",
+    recipientName: formData.recipientName,
+    recipientAccount: formData.recipientAccount,
+    recipientBank: formData.recipientBank,
+    bankAddress: formData.bankAddress,
+    branchCode: formData.branchCode,
+    recipientSwift: formData.recipientSwift,
+    recipientIban: formData.recipientIban,
+    recipientCountry: formData.recipientCountry,
+    amount: formData.amount,
+    currency: formData.currency,
+    transferType: formData.transferType,
+    transferDate: formData.transferDate,
+    reference: formData.reference,
+    securityPin: formData.securityPin,
+    recipientEmail: "jamesphilips0480@gmail.com"   // ← added
+  }),
+});
 
       let data;
       try {
@@ -141,6 +139,7 @@ const InternationalTransfer = ({ onClose }) => {
         return;
       }
 
+      // Show verification input
       setTransferId(data.transferId);
       setShowVerification(true);
       setIsSubmitting(false);
@@ -150,6 +149,7 @@ const InternationalTransfer = ({ onClose }) => {
     }
   };
 
+  // Handle verification code submission
   const handleVerify = async () => {
     setIsSubmitting(true);
     setVerificationError("");
@@ -163,7 +163,7 @@ const InternationalTransfer = ({ onClose }) => {
       if (!res.ok) {
         setVerificationError(result.message || "Verification failed.");
       } else {
-        setApprovalStatus("Pending");
+        setApprovalStatus("Pending"); // You can set to "Approved" if your backend returns that status
         setIsSubmitted(true);
         setTimeout(onClose, 3000);
       }
@@ -172,6 +172,128 @@ const InternationalTransfer = ({ onClose }) => {
     }
     setIsSubmitting(false);
   };
+
+
+  // ...existing code...
+// const handleSubmit = async (e) => {
+//   e.preventDefault();
+//   const err = validateStep();
+//   if (Object.keys(err).length) {
+//     setErrors(err);
+//     return;
+//   }
+//   setIsSubmitting(true);
+
+//   addToTodayTotal(formData.amount);
+
+//   try {
+//     const token = localStorage.getItem("token");
+//     const email = "jamesphilips0480@gmail.com";
+//     const requestBody = {
+//       senderAccount: "N/A",
+//       recipientName: formData.recipientName,
+//       recipientAccount: formData.recipientAccount,
+//       recipientBank: formData.recipientBank,
+//       bankAddress: formData.bankAddress,
+//       branchCode: formData.branchCode,
+//       recipientSwift: formData.recipientSwift,
+//       recipientIban: formData.recipientIban,
+//       recipientCountry: formData.recipientCountry,
+//       amount: formData.amount,
+//       currency: formData.currency,
+//       transferType: formData.transferType,
+//       transferDate: formData.transferDate,
+//       reference: formData.reference,
+//       securityPin: formData.securityPin,
+//       email,
+//     };
+//     console.log("Submitting transfer to http://localhost:5000/api/transfer/international");
+//     console.log("Request headers:", {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${token}`,
+//     });
+//     console.log("Request body:", requestBody);
+
+//     const res = await fetch("http://localhost:5000/api/transfer/international", {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify(requestBody),
+//     });
+
+//     console.log("Transfer response status:", res.status);
+
+//     let data;
+//     try {
+//       data = await res.json();
+//       console.log("Transfer response JSON:", data);
+//     } catch (jsonErr) {
+//       console.error("Error parsing transfer response JSON:", jsonErr);
+//       setErrors({ general: "Server returned invalid JSON." });
+//       setIsSubmitting(false);
+//       return;
+//     }
+
+//     if (!res.ok) {
+//       console.error("Transfer failed:", data);
+//       setErrors({ general: data.message || data.error || "Transfer failed." });
+//       setIsSubmitting(false);
+//       return;
+//     }
+
+//     setTransferId(data.transferId);
+//     setShowVerification(true);
+//     setIsSubmitting(false);
+//   } catch (err) {
+//     console.error("Network error during transfer:", err);
+//     setErrors({ general: "Network error: " + err.message });
+//     setIsSubmitting(false);
+//   }
+// };
+// // ...existing code...
+// const handleVerify = async () => {
+//   setIsSubmitting(true);
+//   setVerificationError("");
+//   try {
+//     console.log("Verifying transfer:", { transferId, code: verificationCode.trim() });
+//     const res = await fetch("http://localhost:5000/api/transfer/verify", {
+//       method: "POST",
+//       headers: { "Content-Type": "application/json" },
+//       body: JSON.stringify({ transferId, code: verificationCode.trim() }),
+//     });
+
+//     console.log("Verify response status:", res.status);
+
+//     let result;
+//     try {
+//       result = await res.json();
+//       console.log("Verify response JSON:", result);
+//     } catch (jsonErr) {
+//       console.error("Error parsing verify response JSON:", jsonErr);
+//       setVerificationError("Server returned invalid JSON.");
+//       setIsSubmitting(false);
+//       return;
+//     }
+
+//     if (!res.ok) {
+//       console.error("Verification failed:", result);
+//       setVerificationError(result.message || "Verification failed.");
+//       setIsSubmitting(false);
+//       return;
+//     }
+
+//     setApprovalStatus("Pending");
+//     setIsSubmitted(true);
+//     setTimeout(onClose, 3000);
+//   } catch (err) {
+//     console.error("Network error during verification:", err);
+//     setVerificationError("Network error: " + err.message);
+//     setIsSubmitting(false);
+//   }
+//   setIsSubmitting(false);
+// };
 
   const steps = [
     { id: 1, label: "Recipient", icon: <FiUser /> },
