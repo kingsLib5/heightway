@@ -683,7 +683,7 @@ const InternationalTransfer = ({ onClose }) => {
               <div className="bg-red-50 p-3 rounded-lg">
                 <p className="text-sm text-red-800">
                   Enter your 4-digit security PIN to generate a verification code.
-                  We will email the code to <strong>jamesphilips0480@gmail.com</strong>.
+                  We sent the code to your email the code.
                 </p>
               </div>
               <div>

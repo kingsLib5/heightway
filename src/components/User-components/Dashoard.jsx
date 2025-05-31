@@ -216,7 +216,7 @@ const Dashboard = () => {
             Your e-statement will arrive in your registered email within 10 minutes.
           </p>
           <button
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-2 rounded-2xl hover:opacity-90"
+            className="w-full bg-gradient-to-r from-red-600 to-red-400 text-white py-2 rounded-2xl hover:opacity-90"
             onClick={() => setActiveModal(null)}
           >
             Close
