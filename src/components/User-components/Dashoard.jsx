@@ -1,3 +1,5 @@
+// src/pages/Dashboard.jsx
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,15 +18,12 @@ import {
   FaSearch,
   FaMoneyCheckAlt,
   FaGlobeAmericas,
-  FaCreditCard,
-  FaArrowRight,
 } from "react-icons/fa";
-import { FiSend, FiDownload, FiEye } from "react-icons/fi";
+import { FiEye } from "react-icons/fi";
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeModal, setActiveModal] = useState(null);
-  const [cardDetails, setCardDetails] = useState(null);
   const [username, setUsername] = useState("");
   const [accounts, setAccounts] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -33,25 +32,49 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
-  // Fetch accounts from backend
- const fetchAccounts = async () => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch("https://hsbc-online-backend.onrender.com/api/user/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) {
-      console.error("Failed to fetch accounts");
+  // Log out handler: clear jwtToken and redirect to login page
+  const handleLogout = () => {
+    localStorage.removeItem("jwtToken"); // ← remove the same key we read
+    localStorage.removeItem("isLoggedIn");
+    navigate("/login");
+  };
+
+  // Fetch accounts from backend (GET /api/user/me)
+  const fetchAccounts = async () => {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      console.error("[Dashboard] No JWT found. User is not authenticated.");
       return;
     }
-    const data = await res.json();
-    console.log("Fetched accounts data:", data); // <-- Add this line
-    setUsername("김남준"); // Always set this username
-    setAccounts(data.accounts || []);
-  } catch (err) {
-    console.error("Error fetching accounts:", err);
-  }
-};
+
+    try {
+      const res = await fetch("https://hsbc-online-backend.onrender.com/api/user/me", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // <<< include real JWT
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        console.error("[Dashboard] Failed to fetch accounts:", errData.message || errData);
+        return;
+      }
+
+      const data = await res.json();
+      console.log("[Dashboard] Fetched accounts data:", data);
+
+      // Username is always “김남준”
+      setUsername("김남준");
+
+      // The endpoint returns at least { accounts: [...] }
+      setAccounts(data.accounts || []);
+    } catch (err) {
+      console.error("[Dashboard] Error fetching accounts:", err);
+    }
+  };
+
   useEffect(() => {
     fetchAccounts();
 
@@ -80,27 +103,45 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch transactions from backend
+    // Fetch transactions from backend (GET /api/transfers/all)
     const fetchTransactions = async () => {
-      const token = localStorage.getItem("token");
-      const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfer/all", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        console.error("API error:", err);
+      const token = localStorage.getItem("jwtToken");
+      if (!token) {
+        console.error("[Dashboard] No JWT found. Cannot fetch transactions.");
         return;
       }
-      const data = await res.json();
-      if (!Array.isArray(data)) {
-        console.error("API did not return an array:", data);
-        return;
+
+      try {
+        const res = await fetch("https://hsbc-online-backend.onrender.com/api/transfers/all", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // <<< include real JWT
+          },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          console.error("[Dashboard] Failed to fetch transactions:", errData.message || errData);
+          return;
+        }
+
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          console.error("[Dashboard] API did not return an array:", data);
+          return;
+        }
+
+        // Show only the 3 most recent transactions
+        const lastThree = data
+          .sort((a, b) => new Date(b.transferDate) - new Date(a.transferDate))
+          .slice(0, 3);
+
+        setTransactions(lastThree);
+        setFilteredTransactions(lastThree);
+      } catch (err) {
+        console.error("[Dashboard] Error fetching transactions:", err);
       }
-      const lastThree = data
-        .sort((a, b) => new Date(b.transferDate) - new Date(a.transferDate))
-        .slice(0, 3);
-      setTransactions(lastThree);
-      setFilteredTransactions(lastThree);
     };
 
     fetchTransactions();
@@ -117,7 +158,8 @@ const Dashboard = () => {
     setFilteredTransactions(filtered);
   }, [searchQuery, transactions]);
 
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  // Calculate total balance
+  const totalBalance = accounts.reduce((sum, a) => sum + (a.balance || 0), 0);
 
   const quickActions = [
     {
@@ -131,7 +173,10 @@ const Dashboard = () => {
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="p-4 rounded-2xl bg-white shadow-md cursor-pointer border border-gray-100"
-              onClick={() => navigate("/user/local-transfer")}
+              onClick={() => {
+                setActiveModal(null);
+                navigate("/user/local-transfer");
+              }}
             >
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                 <FaMoneyCheckAlt className="text-blue-600 text-xl" />
@@ -141,7 +186,10 @@ const Dashboard = () => {
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="p-4 rounded-2xl bg-white shadow-md cursor-pointer border border-gray-100"
-              onClick={() => navigate("/user/international-transfer")}
+              onClick={() => {
+                setActiveModal(null);
+                navigate("/user/international-transfer");
+              }}
             >
               <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
                 <FaGlobeAmericas className="text-blue-600 text-xl" />
@@ -212,9 +260,11 @@ const Dashboard = () => {
             Here's what's happening with your money today
           </p>
         </div>
+
+        {/* Profile Icon with Logout */}
         <button
           className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 flex items-center justify-center shrink-0"
-          onClick={() => navigate("")}
+          onClick={handleLogout}
         >
           <FaUserCircle className="text-xl sm:text-2xl" />
         </button>
@@ -252,7 +302,7 @@ const Dashboard = () => {
       <div className="mb-6 sm:mb-8">
         <h2 className="text-lg sm:text-xl font-bold text-neutral-800 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {quickActions.map(({ id, name, icon, content }) => (
+          {quickActions.map(({ id, name, icon }) => (
             <motion.div
               key={id}
               whileHover={{ scale: 1.05 }}

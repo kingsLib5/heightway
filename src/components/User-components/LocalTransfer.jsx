@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+// src/pages/LocalTransferPage.jsx
+
+import React, { useState, useEffect, useRef } from "react";
 import Modal from "../Modal/Modal";
 import LocalTransferForm from "../Forms/LocalTransferForm";
 import {
@@ -11,51 +13,135 @@ import {
 
 const LocalTransferPage = () => {
   const [showTransferForm, setShowTransferForm] = useState(false);
-  const [userAccounts] = useState([]);
+  const [userAccounts] = useState([]); // you can replace with real accounts if passed in
 
-  // New states for PIN, transfer, and status
+  // --- PIN modal state ---
   const [showPinModal, setShowPinModal] = useState(false);
   const [pinInput, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
+
+  // --- Transfer data and status state ---
   const [transferData, setTransferData] = useState(null);
-  const [transferStatus, setTransferStatus] = useState(null);
+  const [transferId, setTransferId] = useState(null);
+  const [transferStatus, setTransferStatus] = useState(null); // "pending", "approved", "failed"
   const [backendError, setBackendError] = useState("");
 
-  // Called when transfer form submits
+  // We'll keep a ref to the timeout so we can clear if needed
+  const autoApproveTimeoutRef = useRef(null);
+
+  // Called when LocalTransferForm (child) submits with the form data
   const handleTransferSubmit = (data) => {
+    // data is an object containing all fields from LocalTransferForm
     setTransferData(data);
+
+    // 1) Close the form and open the PIN modal
     setShowTransferForm(false);
     setShowPinModal(true);
     setPinInput("");
     setPinError("");
     setBackendError("");
+
+    // Reset any previous transferId/status
+    setTransferId(null);
+    setTransferStatus(null);
+
+    // If there was a previously scheduled timeout, clear it
+    if (autoApproveTimeoutRef.current) {
+      clearTimeout(autoApproveTimeoutRef.current);
+      autoApproveTimeoutRef.current = null;
+    }
   };
 
-  // Handle PIN verification and backend call
+  // Called when the user clicks “Confirm PIN” in the modal
   const verifyPin = async () => {
-    if (pinInput === "0994") {
+    if (pinInput === "0094") {
       setPinError("");
       setShowPinModal(false);
       setTransferStatus(null);
       setBackendError("");
-      // Send to backend
+
+      // 2) Send to backend (createTransfer)
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("token"); // or "jwtToken" if that's your key
+        if (!token) {
+          throw new Error("Not authenticated. Please log in.");
+        }
+
         const response = await fetch(
-          "https://hsbc-backend-rc6o.onrender.com/api/transfer/local",
+          "https://hsbc-online-backend.onrender.com/api/transfers",
           {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(transferData),
+            body: JSON.stringify({
+              // We must include bankAddress, recipientSwift, recipientCountry as non-empty
+              recipientEmail: transferData.recipientEmail,
+              recipientName: transferData.recipientName,
+              recipientAccount: transferData.recipientAccount,
+              recipientBank: transferData.recipientBank,
+              bankAddress: "N/A",
+              branchCode: transferData.branchCode || "",
+              recipientRouting: transferData.recipientRouting,
+              recipientSwift: "N/A",
+              recipientIban: transferData.recipientIban || "",
+              recipientCountry: "N/A",
+              amount: parseFloat(transferData.amount),
+              currency: "USD",
+              transferType: transferData.transferType,
+              transferDate: transferData.transferDate,
+              reference: transferData.reference,
+              securityPin: transferData.securityPin,
+            }),
           }
         );
+
         const data = await response.json();
         if (response.ok) {
+          // 3) Backend has created transfer with status "PendingVerification"
+          // We treat that as "pending"
+          setTransferId(data._id);
           setTransferStatus("pending");
+          setBackendError("");
+
+          // 4) Because backend auto-approves 20 seconds after verify, we schedule a fetch
+          // Wait 20 seconds, then GET /api/transfers/:id to see if status changed to "Approved"
+          autoApproveTimeoutRef.current = setTimeout(async () => {
+            try {
+              const token2 = localStorage.getItem("token");
+              if (!token2) return;
+
+              const statusRes = await fetch(
+                `https://hsbc-online-backend.onrender.com/api/transfers/${data._id}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${token2}`,
+                  },
+                }
+              );
+              if (!statusRes.ok) {
+                const errJson = await statusRes.json();
+                console.error(
+                  "[LocalTransferPage] Auto-fetch status error:",
+                  errJson
+                );
+                return;
+              }
+              const statusData = await statusRes.json();
+              // statusData.status should now be "Approved"
+              if (statusData.status === "Approved") {
+                setTransferStatus("approved");
+              }
+            } catch (err) {
+              console.error(
+                "[LocalTransferPage] Error auto-fetching transfer status:",
+                err
+              );
+            }
+          }, 20 * 1000);
         } else {
+          // If creation returned a 4xx or 5xx
           setTransferStatus("failed");
           setBackendError(data.message || "Transfer failed.");
         }
@@ -68,9 +154,18 @@ const LocalTransferPage = () => {
     }
   };
 
+  // Clear the timeout if the component unmounts
+  useEffect(() => {
+    return () => {
+      if (autoApproveTimeoutRef.current) {
+        clearTimeout(autoApproveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="container max-w-4xl mx-auto px-4 sm:px-6 py-6">
-      {/* Header */}
+      {/* === Header === */}
       <header className="text-center mb-10 px-2">
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-red-700 mb-4">
           Domestic Transfers
@@ -80,14 +175,14 @@ const LocalTransferPage = () => {
         </p>
       </header>
 
-      {/* Transfer Banner */}
+      {/* === Transfer Banner === */}
       <div className="bg-gradient-to-br from-red-50 to-red-100 p-6 sm:p-8 rounded-3xl shadow-xl mb-10">
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
           <div className="bg-red-600 p-3 rounded-lg">
             <FiArrowRight className="text-2xl text-white" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-semibold text-red-700">
-            Fast & Secure Transfers
+            Fast &amp; Secure Transfers
           </h2>
         </div>
 
@@ -108,10 +203,10 @@ const LocalTransferPage = () => {
           </div>
           <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition">
             <FiShield className="text-2xl text-purple-500 mb-4" />
-            <h3 className="font-medium text-gray-800 mb-2">Bank-Level Security</h3>
-            <p className="text-sm text-gray-600">
-              256-bit SSL encryption
-            </p>
+            <h3 className="font-medium text-gray-800 mb-2">
+              Bank-Level Security
+            </h3>
+            <p className="text-sm text-gray-600">256-bit SSL encryption</p>
           </div>
         </div>
 
@@ -138,31 +233,33 @@ const LocalTransferPage = () => {
         </div>
       </div>
 
-      {/* How It Works */}
+      {/* === How It Works === */}
       <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-xl">
         <h2 className="text-2xl sm:text-3xl font-semibold text-red-700 mb-6 sm:mb-8">
           How It Works
         </h2>
         <div className="space-y-6">
-          {["Enter Recipient Details", "Review & Confirm", "Transfer Complete"].map((step, idx) => (
-            <div key={idx} className="flex gap-4 items-start">
-              <div className="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
-                {idx + 1}
+          {["Enter Recipient Details", "Review & Confirm", "Transfer Complete"].map(
+            (step, idx) => (
+              <div key={idx} className="flex gap-4 items-start">
+                <div className="bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0">
+                  {idx + 1}
+                </div>
+                <div>
+                  <h3 className="font-medium text-gray-800 mb-1">{step}</h3>
+                  <p className="text-sm text-gray-600">
+                    {idx === 0 && "Provide account information and transfer amount"}
+                    {idx === 1 && "Verify all details and confirm transfer"}
+                    {idx === 2 && "Funds typically arrive within 1 business day"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium text-gray-800 mb-1">{step}</h3>
-                <p className="text-sm text-gray-600">
-                  {idx === 0 && "Provide account information and transfer amount"}
-                  {idx === 1 && "Verify all details and confirm transfer"}
-                  {idx === 2 && "Funds typically arrive within 1 business day"}
-                </p>
-              </div>
-            </div>
-          ))}
+            )
+          )}
         </div>
       </div>
 
-      {/* Modal for transfer form */}
+      {/* === Modal: Transfer Form === */}
       <Modal
         isOpen={showTransferForm}
         onClose={() => setShowTransferForm(false)}
@@ -175,7 +272,7 @@ const LocalTransferPage = () => {
         />
       </Modal>
 
-      {/* PIN verification modal */}
+      {/* === Modal: PIN Verification === */}
       <Modal
         isOpen={showPinModal}
         onClose={() => setShowPinModal(false)}
@@ -201,13 +298,24 @@ const LocalTransferPage = () => {
         </div>
       </Modal>
 
-      {/* Show transfer status if set */}
+      {/* === Show Transfer Status Banner === */}
       {transferStatus && (
         <div className="mt-6 p-4 bg-yellow-100 text-yellow-800 rounded-lg text-center font-semibold">
-          Transfer status: <span className="uppercase">{transferStatus}</span>
+          Transfer status:{" "}
+          <span className="uppercase">
+            {transferStatus === "pending" && "PENDING"}
+            {transferStatus === "approved" && "APPROVED"}
+            {transferStatus === "failed" && "FAILED"}
+          </span>
           {transferStatus === "pending" && (
             <span className="block text-sm font-normal mt-1">
-              Your transfer is pending approval. You will be notified once it is processed.
+              Your transfer is pending approval. You will be notified once it is
+              processed.
+            </span>
+          )}
+          {transferStatus === "approved" && (
+            <span className="block text-sm font-normal mt-1 text-green-700">
+              Your transfer has been approved! Funds will arrive shortly.
             </span>
           )}
           {transferStatus === "failed" && backendError && (

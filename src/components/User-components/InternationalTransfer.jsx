@@ -1,3 +1,5 @@
+// src/components/InternationalTransfer.jsx
+
 import React, { useState } from "react";
 import Modal from "../Modal/Modal";
 import InternationalTransferForm from "../Forms/InternationTransfer";
@@ -49,7 +51,8 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
     );
   }
 
-  // Called when transfer form submits
+  // Called when the transfer form is submitted:
+  // We receive an object “data” containing all required fields, including recipientEmail.
   const handleTransferSubmit = (data) => {
     setTransferData(data);
     setShowTransferForm(false);
@@ -59,12 +62,12 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
     setBackendError("");
   };
 
-  // Simple email format check (basic)
+  // Basic email format validation
   const validateEmail = (email) => {
     return /\S+@\S+\.\S+/.test(email);
   };
 
-  // Handle email verification confirm
+  // Handle “verify email” modal confirm
   const verifyEmail = () => {
     if (!validateEmail(emailInput)) {
       setEmailError("Please enter a valid email address.");
@@ -77,30 +80,39 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
     setPinError("");
   };
 
-  // Handle PIN verification confirm and send to backend
+  // Handle PIN verification confirm and send data to backend
   const verifyPin = async () => {
     if (pinInput === "0994") {
       setPinError("");
       setShowPinModal(false);
       setTransferStatus(null);
       setBackendError("");
-      // Send to backend
+
+      // 1) Read JWT from localStorage (must match Login.jsx)
+      const token = localStorage.getItem("jwtToken");
+      if (!token) {
+        setTransferStatus("failed");
+        setBackendError("You are not authenticated. Please log in first.");
+        return;
+      }
+
+      // 2) Send to backend (POST /api/transfers)
       try {
-        const token = localStorage.getItem("token"); // Adjust if you store token elsewhere
-        const response = await fetch(
-          "https://hsbc-backend-rc6o.onrender.com/api/transfer/international",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              ...transferData,
-              email: emailInput,
-            }),
-          }
-        );
+        const response = await fetch("https://hsbc-online-backend.onrender.com/api/transfers", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`, // using "jwtToken"
+          },
+          body: JSON.stringify({
+            ...transferData,
+            // We already included recipientEmail in transferData,
+            // but in case you want to override from the “email modal,” add it:
+            // recipientEmail: emailInput,
+            securityPin: pinInput.trim(),
+          }),
+        });
+
         const data = await response.json();
         if (response.ok) {
           setTransferStatus("pending");
@@ -150,16 +162,23 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
         <div className="bg-white p-6 rounded-xl border border-gray-100 mb-8">
           <h4 className="font-medium text-red-700 mb-4">Supported Currencies</h4>
           <div className="flex flex-wrap gap-3">
-            {["USD", "EUR", "GBP", "CAD", "AUD", "JPY", "CNY", "INR"].map(
-              (currency) => (
-                <span
-                  key={currency}
-                  className="px-3 py-1 bg-gray-50 rounded-full text-sm"
-                >
-                  {currency}
-                </span>
-              )
-            )}
+            {[
+              "USD",
+              "EUR",
+              "GBP",
+              "CAD",
+              "AUD",
+              "JPY",
+              "CNY",
+              "INR",
+            ].map((currency) => (
+              <span
+                key={currency}
+                className="px-3 py-1 bg-gray-50 rounded-full text-sm"
+              >
+                {currency}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -198,12 +217,18 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
               title: "Select Country",
               desc: "Choose recipient's country and bank",
             },
-            { title: "Enter Details", desc: "IBAN/SWIFT codes and amount" },
+            {
+              title: "Enter Details",
+              desc: "IBAN/SWIFT codes and amount",
+            },
             {
               title: "Review Fees",
               desc: "See exchange rate & transfer fees",
             },
-            { title: "Confirm & Send", desc: "Authorize with 2FA security" },
+            {
+              title: "Confirm & Send",
+              desc: "Authorize with 2FA security",
+            },
           ].map((step, index) => (
             <div key={step.title} className="text-center">
               <div className="w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center mx-auto mb-4">
@@ -274,9 +299,7 @@ const InternationalTransfer = ({ userAccounts, loading, error }) => {
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
           />
-          {emailError && (
-            <p className="text-red-600 text-sm">{emailError}</p>
-          )}
+          {emailError && <p className="text-red-600 text-sm">{emailError}</p>}
           <button
             className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded mt-2"
             onClick={verifyEmail}
