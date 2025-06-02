@@ -66,7 +66,7 @@ const Dashboard = () => {
       console.log("[Dashboard] Fetched accounts data:", data);
 
       // Username is always “김남준”
-      setUsername("김남준");
+      setUsername("Kim Namjoon");
 
       // The endpoint returns at least { accounts: [...] }
       setAccounts(data.accounts || []);
