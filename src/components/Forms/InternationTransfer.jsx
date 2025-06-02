@@ -617,10 +617,10 @@ const InternationalTransfer = ({ onClose }) => {
                   Exchange rate: 1 USD = 0.85 EUR
                 </p>
                 <p className="text-xs text-gray-700">
-                  <span className="font-semibold">One‐time limit:</span> $250,000
+                  <span className="font-semibold">One‐time limit:</span> $500,000
                 </p>
                 <p className="text-xs text-gray-700">
-                  <span className="font-semibold">Daily limit:</span> $500,000
+                  <span className="font-semibold">Daily limit:</span> $1,000,000
                 </p>
               </div>
             </div>

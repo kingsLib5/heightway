@@ -70,7 +70,7 @@ const LocalTransfer = ({ onClose }) => {
 
       try {
         const response = await axios.get(
-          "http://localhost:5000/api/user/me",
+          "https://hsbc-online-backend.onrender.com/api/user/me",
           {
             headers: {
               Authorization: `Bearer ${token}`,
